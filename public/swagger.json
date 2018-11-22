@@ -1,0 +1,406 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Swagger 2.0 API for Web Application 'azure-webapp-nodejs-m26-apim'",
+    "version": "1.0.0",
+    "title": "azure-webapp-nodejs-m26-apim",
+    "contact": {
+      "email": "chjoakim@microsoft.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+
+  "host": "cjoakim-nodejs-m26.azurewebsites.net",
+  "basePath": "/",
+
+  "tags": [
+    {
+      "name": "m26-js",
+      "description": "The m26-js npm library",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "https://www.npmjs.com/package/m26-js"
+      }
+    },
+    {
+      "name": "running",
+      "description": "m26-js is a set of calculators for runners"
+    },
+    {
+      "name": "APIM",
+      "description": "Azure API Management",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "https://docs.microsoft.com/en-us/azure/api-management/"
+      }
+    }
+  ],
+  "schemes": [
+    "https",
+    "http"
+  ],
+
+  "paths": {
+
+    "/age/calc": {
+      "post": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "Calculate an age given two dates",
+        "description": "",
+        "operationId": "age_calc",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "parameters for the calculation",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AgeCalcIn"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/AgeCalcOut"
+            }
+          },
+          "400": {
+            "description": "Invalid status value"
+          }
+        }
+      }
+    },
+
+    "/pace/calc": {
+      "post": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "Calculate a running pace and optionally extrapolate it",
+        "description": "",
+        "operationId": "pace_calc",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "parameters for the calculation",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PaceCalcIn"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/PaceCalcOut"
+            }
+          },
+          "400": {
+            "description": "Invalid status value"
+          }
+        }
+      }
+    },
+
+    "/runwalk/calc": {
+      "post": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "Calculate an average pace given run and walk segments",
+        "description": "",
+        "operationId": "runwalk_calc",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "parameters for the calculation",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RunwalkCalcIn"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/RunwalkCalcOut"
+            }
+          },
+          "400": {
+            "description": "Invalid status value"
+          }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+
+    "AgeCalcIn": {
+      "type": "object",
+      "required": [
+        "date1",
+        "date2"
+      ],
+      "properties": {
+        "date1": {
+          "type": "string",
+          "description": "the first logical date in YYYY-MM-DD format, less than date2",
+          "example": "2000-08-04"
+        },
+        "date2": {
+          "type": "string",
+          "description": "the second logical date in YYYY-MM-DD format, greater than date1",
+          "example": "2017-12-28"
+        }
+      }
+    },
+
+    "AgeCalcOut": {
+      "type": "object",
+      "required": [
+        "date1",
+        "date2",
+        "age"
+      ],
+      "properties": {
+        "date1": {
+          "type": "string",
+          "description": "the first logical date in YYYY-MM-DD format, less than date2",
+          "example": "2000-08-04"
+        },
+        "date2": {
+          "type": "string",
+          "description": "the second logical date in YYYY-MM-DD format, greater than date1",
+          "example": "2017-12-28"
+        },
+        "age": {
+          "type": "number",
+          "description": "the calculated age, in number of years, between the two dates",
+          "example": 17.399041752224505
+        }
+      }
+    },
+
+    "PaceCalcIn": {
+      "type": "object",
+      "required": [
+        "uom",
+        "dist",
+        "time"
+      ],
+      "properties": {
+        "uom": {
+          "type": "string",
+          "description": "unit-of-measure, either m (miles), k (kilometers), or y (yards)",
+          "example": "m"
+        },
+        "dist": {
+          "type": "number",
+          "description": "the distance in the given uom (unit-of-measure)",
+          "example": 26.2
+        },
+        "time": {
+          "type": "string",
+          "description": "the elapsed time in HH:MM:SS format",
+          "example": "03:47:30"
+        },
+        "dist2": {
+          "type": "number",
+          "description": "optional second distance to extrapolate/interpolate to",
+          "example": 20.0
+        }
+      }
+    },
+
+    "PaceCalcOut": {
+      "type": "object",
+      "required": [
+        "uom",
+        "dist",
+        "time"
+      ],
+      "properties": {
+        "uom": {
+          "type": "string",
+          "description": "the input unit-of-measure, either m (miles), k (kilometers), or y (yards)",
+          "example": "m"
+        },
+        "dist": {
+          "type": "number",
+          "description": "the input distance in the given uom (unit-of-measure)",
+          "example": 26.2
+        },
+        "time": {
+          "type": "string",
+          "description": "the input elapsed time in HH:MM:SS format",
+          "example": "03:47:30"
+        },
+        "dist2": {
+          "type": "number",
+          "description": "the optional input second distance to extrapolate/interpolate to",
+          "example": 20.0
+        },
+        "pace_per_mile": {
+          "type": "string",
+          "description": "the calculated pace in MM:SS.ss format",
+          "example": "8:40.99"
+        },
+        "seconds_per_mile": {
+          "type": "number",
+          "description": "the calculated number of seconds per mile",
+          "example": 520.9923664122138
+        },
+        "mph": {
+          "type": "number",
+          "description": "the calculated miles per hour",
+          "example": 6.90989010989011
+        },
+        "kph": {
+          "type": "number",
+          "description": "the calculated kilometers per hour",
+          "example": 11.120390189010989
+        },
+        "yph": {
+          "type": "number",
+          "description": "the calculated yards per hour",
+          "example": 12161.406593406595
+        },
+        "dist2_projected_time": {
+          "type": "string",
+          "description": "if dist2 is given, the extrapolated/interpolated calculated time in HH:MM:SS.ss format",
+          "example": "8:40.99"
+        }
+      }
+    },
+
+    "RunwalkCalcIn": {
+      "type": "object",
+      "required": [
+        "run_hhmmss",
+        "run_ppm",
+        "walk_hhmmss",
+        "walk_ppm",
+        "miles"
+      ],
+      "properties": {
+        "run_hhmmss": {
+          "type": "string",
+          "description": "the running time in HH:MM:SS format",
+          "example": "9:15"
+        },
+        "run_ppm": {
+          "type": "string",
+          "description": "the running pace per mile in HH:MM:SS format",
+          "example": "9:00"
+        },
+        "walk_hhmmss": {
+          "type": "string",
+          "description": "the walking time in HH:MM:SS format",
+          "example": "9:15"
+        },
+        "walk_ppm": {
+          "type": "string",
+          "description": "the walking pace per mile in HH:MM:SS format",
+          "example": "9:00"
+        },
+        "miles": {
+          "type": "number",
+          "description": "the distance in miles of the event",
+          "example": 26.2
+        }
+      }
+    },
+
+    "RunwalkCalcOut": {
+      "type": "object",
+      "required": [
+        "run_hhmmss",
+        "run_ppm",
+        "walk_hhmmss",
+        "walk_ppm",
+        "miles",
+        "avg_mph",
+        "avg_ppm",
+        "proj_time"
+      ],
+      "properties": {
+        "run_hhmmss": {
+          "type": "string",
+          "description": "the input running time in HH:MM:SS format",
+          "example": "9:15"
+        },
+        "run_ppm": {
+          "type": "string",
+          "description": "the input running pace per mile in HH:MM:SS format",
+          "example": "9:00"
+        },
+        "walk_hhmmss": {
+          "type": "string",
+          "description": "the input walking time in HH:MM:SS format",
+          "example": "9:15"
+        },
+        "walk_ppm": {
+          "type": "string",
+          "description": "the input walking pace per mile in HH:MM:SS format",
+          "example": "9:00"
+        },
+        "miles": {
+          "type": "number",
+          "description": "the input distance in miles of the event",
+          "example": 26.2
+        },
+        "avg_mph": {
+          "type": "number",
+          "description": "the calculated miles-per-hour given the run and walk segments",
+          "example": 6.201550387596899
+        },
+        "avg_ppm": {
+          "type": "string",
+          "description": "the calculated pace-per-mile in MM:SS.ss format",
+          "example": "9:40.5"
+        },
+        "proj_time": {
+          "type": "string",
+          "description": "the calculated projected time for the distance in HH:MM:SS format",
+          "example": "04:13:29"
+        }
+      }
+    }
+
+  },
+
+  "externalDocs": {
+    "description": "Find out more about Swagger",
+    "url": "http://swagger.io"
+  }
+}
