@@ -4,7 +4,7 @@
   "description": "web app built with node.js, express, socket.io, and cosmosdb",
   "main": "app.js",
   "scripts": {
-    "start": "node bin/www"
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",
