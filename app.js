@@ -55,6 +55,9 @@ io.on('connection', function(socket) {
     if (authenticated) {
       console.log('logon_successful: ' +  user_id);
       socket.emit('logon_successful', user_id);
+
+      socket.handshake.session.auth_user_id = user_id;
+      socket.handshake.session.save();
     }
     else {
       console.log('logon_unsuccessful: ' + user_id);
@@ -63,7 +66,8 @@ io.on('connection', function(socket) {
   });
 
   socket.on('chat_message', function(msg) {
-    console.log('message: ' + msg);
+    var auth_user_id = socket.handshake.session.auth_user_id;
+    console.log('chat_message from user: ' + auth_user_id + ' message: ' + msg);
     io.emit('chat_message', msg);
 
     io.of('/').clients((error, clients) => {
