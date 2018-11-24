@@ -36,27 +36,28 @@ io.on('connection', function(socket) {
   console.log('a user connected');
   console.log('socket.handshake.session: ' + JSON.stringify(socket.handshake.session));
   
-
   socket.broadcast.emit('hi');
 
   socket.on('logon_submit', function(msg) {
     console.log('logon_submit: ' + msg);
     var creds = msg.trim().split(' ');
     var authenticated = false;
+    var user_id = '';
+    var user_pass = '';
     console.log(creds);
     if (creds.length === 2) {
-      var user_id = creds[0];
-      var user_pass = creds[1];
+      user_id = creds[0];
+      user_pass = creds[1];
       if (user_pass === '123') {
         authenticated = true;
       }
     }
     if (authenticated) {
-      console.log('logon_successful', user_id);
+      console.log('logon_successful: ' +  user_id);
       socket.emit('logon_successful', user_id);
     }
     else {
-      console.log('logon_unsuccessful', user_id);
+      console.log('logon_unsuccessful: ' + user_id);
       socket.emit('logon_unsuccessful', '');
     }
   });
