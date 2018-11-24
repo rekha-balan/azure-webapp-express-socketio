@@ -115,6 +115,13 @@
           $('#messages').append($('<li>').text(msg));
         });
 
+        function client_poll() {
+          socket.emit('client_poll', 'please');
+          setTimeout(client_poll, 3000);
+        }
+
+        client_poll();
+
         socket.on('ping', () => {
           console.log("ping sent to server");
         });

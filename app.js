@@ -118,6 +118,11 @@ io.on('connection', function(socket) {
     sb_client.send_message_to_queue(message);
   });
 
+  socket.on('client_poll', function(){
+    console.log('client_poll');
+    socket.emit('client_poll received');
+  });
+
   socket.on('disconnect', function(){
     console.log('user disconnected');
     socket.broadcast.emit('user disconnected');
