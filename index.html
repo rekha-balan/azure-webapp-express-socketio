@@ -11,32 +11,76 @@
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
+      #logon_table { padding: 5px 10px; }
+      #user_table { padding: 5px 10px; }
     </style>
   </head>
 
   <body>
-    <table border='1'>
+    <br/>
+    <h3 align='center'>Socket.io App</h3>
+    <br/>
+    <div id='logon_div' align='center'>
+    <table id='logon_table' border='0' align='center'>
       <tr>
-        <td>Client Socket ID:</td>
-        <td id="socket_id"></td>
+        <td>User ID:</td>
+        <td>
+          <input type="text" id="user_id" />
+        </td>
+      </tr>
+      <tr>
+        <td>Password:&nbsp;&nbsp;</td>
+        <td>
+          <input type="password" id="user_pass" />
+        </td>
+      </tr>
+      <tr>
+        <td colspan='2' align='center'>
+          <button type="submit" id="logon_button">Logon</button>
+        </td>
       </tr>
     </table>
+    </div>
 
-    <ul id="messages"></ul>
-    <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
+    <div id='main_div' align='center'>
+      <table border='0' id='user_table'>
+        <tr>
+            <td>User ID:</td>
+            <td id="user_id"></td>
+          </tr>
+        <tr>
+          <td>Client Socket ID:&nbsp;&nbsp;</td>
+          <td id="socket_id"></td>
+        </tr>
+      </table>
+      <hr/>
+      <ul id="messages"></ul>
+      <form action="">
+        <input id="m" autocomplete="off" /><button>Send</button>
+      </form>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       $(function () {
         var socket = io();
+        $('#main_div').hide();
+
+        $('#logon_button').click(function() {
+          console.log('logon clicked');
+          var creds = $('#user_id').val() + ' ' + $('#user_pass').val();
+          console.log('creds: ' + creds);
+          socket.emit('logon_submit', creds);
+          return false;
+        });
+
         $('form').submit(function(){
-          socket.emit('chat message', $('#m').val());
+          socket.emit('chat_message', $('#m').val());
           $('#m').val('');
           return false;
         });
+
         socket.on('connect', () => {
           var id = socket.id;
           console.log('connect; socket.id: ' + id);
@@ -45,9 +89,20 @@
         socket.on('disconnect', () => {
           $("#socket_id").text('');
         });
-        socket.on('chat message', function(msg){
+
+        socket.on('logon_successful', function(msg) {
+          $('#logon_div').hide();
+          $('#main_div').show();
+          $('#messages').append($('<li>').text('logon_successful ' + msg));
+        });
+        socket.on('logon_unsuccessful', function(msg){
+          $('#messages').append($('<li>').text('logon_unsuccessful ' + msg));
+        });
+
+        socket.on('chat_message', function(msg){
           $('#messages').append($('<li>').text(msg));
         });
+
         socket.on('ping', () => {
           console.log("ping sent to server");
         });
