@@ -7,6 +7,7 @@ var app  = express();
 var http = require('http').Server(app);
 var io   = require('socket.io')(http);
 var bodyParser = require('body-parser');
+var azu = require('./lib/azu');
 var poll_sleep_ms = 5000;
 
 // Environment and app-global variables (i.e. - "locals")
@@ -53,11 +54,24 @@ io.on('connection', function(socket) {
       }
     }
     if (authenticated) {
+      var event_count = 0;
       console.log('logon_successful: ' +  user_id);
       socket.emit('logon_successful', user_id);
 
       socket.handshake.session.auth_user_id = user_id;
       socket.handshake.session.save();
+
+      var cache = new azu.AzuRedisUtil();
+      cache.on('done', (evt_obj) => {
+          console.log(JSON.stringify(evt_obj, null, 2));
+          event_count = event_count + 1;
+          if (event_count == 2) {
+            console.log('cache.quit on 2nd expected event');
+            cache.quit();
+          }
+      });
+      cache.set('user_session_' + user_id, socket.id);
+      cache.set('socket_session_' + socket.id, user_id);
     }
     else {
       console.log('logon_unsuccessful: ' + user_id);
