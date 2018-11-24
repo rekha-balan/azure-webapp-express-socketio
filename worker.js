@@ -3,7 +3,6 @@
 // 
 // Chris Joakim, 2018/11/24
 
-const fs  = require('fs');
 const azu = require('./lib/azu');
 
 class Main {
@@ -13,10 +12,10 @@ class Main {
         this.out_qname = undefined;
         this.reader_svcbus_util = undefined;
         this.writer_svcbus_util = undefined;
+        this.cache = undefined;
     }
 
     execute() {
-        //console.log(process.argv);
 
         if (process.argv.length < 3) {
             console.log('error: too few command-line args provided.');
@@ -57,7 +56,6 @@ class Main {
     backend_daemon(in_queue, out_queue) {
         this.in_qname = in_queue;
         this.out_qname = out_queue;
-
         this.reader_svcbus_util = this.create_service_bus_util(this.in_qname);
         this.writer_svcbus_util = this.create_service_bus_util(this.out_qname);
 
@@ -67,10 +65,28 @@ class Main {
 
     webapp_worker(in_queue) {
         this.in_qname = in_queue;
+        this.cache = new azu.AzuRedisUtil();
+        this.cache.on('done', (evt_obj) => {
+            console.log(JSON.stringify(evt_obj, null, 2));
+        });
+        // this.cache.set('user_session_' + user_id, socket.id);
 
         this.reader_svcbus_util = this.create_service_bus_util(this.in_qname);
         this.reader_svcbus_util.on('done', (evt_obj) => {
-            console.log(JSON.stringify(evt_obj, null, 2));
+            console.log('evt_obj: ' + JSON.stringify(evt_obj, null, 2));
+            if (evt_obj['message']) {
+                // {"auth_user_id":"miles","socket_id":"QHkZZRZUVF_yy4Y5AAAA","date":"Sat Nov 24 2018 17:14:08 GMT-0500 (EST)","text":"gggg"}
+                var body = JSON.parse(evt_obj['message']['body']);
+                var auth_user_id = body['auth_user_id'];
+                var socket_id = body['socket_id'];
+                console.log('setting redis key ' + socket_id + ' -> ' + body);
+                this.cache.set(socket_id, JSON.stringify(body));
+
+                // {"auth_user_id":"elsa","socket_id":"Ydhk8m7AXlvns3L_AAAA","date":"Sat Nov 24 2018 17:32:47 GMT-0500 (EST)","text":"ggg"}
+                // node_redis: Deprecated: The SET command contains a "undefined" argument.
+                // This is converted to a "undefined" string now and will return an error from v.3.0 on.
+                // Please handle this in your code to make sure everything works as you intended it to.
+            }
             this.webapp_worker_read_next_message();
         });
         this.webapp_worker_read_next_message();
