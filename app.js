@@ -49,7 +49,10 @@ io.on('connection', function(socket) {
     if (creds.length === 2) {
       user_id = creds[0];
       user_pass = creds[1];
-      if (user_pass === '123') {
+      if (user_pass === 'secret') {
+        authenticated = true;
+      }
+      if (user_pass === 'q') {
         authenticated = true;
       }
     }
@@ -66,7 +69,6 @@ io.on('connection', function(socket) {
           console.log(JSON.stringify(evt_obj, null, 2));
           event_count = event_count + 1;
           if (event_count == 2) {
-            console.log('cache.quit on 2nd expected event');
             cache.quit();
           }
       });
@@ -79,15 +81,39 @@ io.on('connection', function(socket) {
     }
   });
 
-  socket.on('chat_message', function(msg) {
-    var auth_user_id = socket.handshake.session.auth_user_id;
-    console.log('chat_message from user: ' + auth_user_id + ' message: ' + msg);
-    io.emit('chat_message', msg);
+  // socket.on('chat_message', function(msg) {
+  //   var auth_user_id = socket.handshake.session.auth_user_id;
+  //   console.log('chat_message from user: ' + auth_user_id + ' message: ' + msg);
+  //   io.emit('chat_message', msg);
 
-    io.of('/').clients((error, clients) => {
-      if (error) throw error;
-      console.log(clients);
+  //   io.of('/').clients((error, clients) => {
+  //     if (error) throw error;
+  //     console.log(clients);
+  //   });
+  // });
+
+  socket.on('bus_message', function(msg) {
+    var auth_user_id = socket.handshake.session.auth_user_id;
+    console.log('bus_message from user: ' + auth_user_id + ' message: ' + msg);
+
+    // Create an Azure Service Bus client
+    var sb_client = get_svcbus_client();
+    var qname = process.env.AZURE_SERVICEBUS_INBOUND_QUEUE || 'inbound';
+
+    // Create a message to put on Azure Service Bus
+    var message = {};
+    var body = {};
+    body['auth_user_id'] = auth_user_id;
+    body['socket_id'] = socket.id;
+    body['date'] = (new Date()).toString();
+    body['text'] = msg;
+    message.body = JSON.stringify(body);
+
+    // Send the message
+    sb_client.on('done', (evt_obj) => {
+      console.log(JSON.stringify(evt_obj, null, 2));
     });
+    sb_client.send_message_to_queue(message, qname);
   });
 
   socket.on('disconnect', function(){
@@ -95,13 +121,6 @@ io.on('connection', function(socket) {
     socket.broadcast.emit('user disconnected');
   });
 });
-
-
-//var dbUrl = ‘mongodb://username:pass@ds257981.mlab.com:57981/simple-chat’;
-
-// mongoose.connect(dbUrl , (err) => { 
-//    console.log(‘mongodb connected’,err);
-// })
 
 app.set('port', process.env.PORT || 80);
 
@@ -118,6 +137,14 @@ function poll(i) {
     }
   });
   setTimeout(poll, poll_sleep_ms, i + 1);
+}
+
+function get_svcbus_client() {
+  var opts = {};
+  opts['queue_name'] = process.env.AZURE_SERVICEBUS_INBOUND_QUEUE || 'inbound';
+  opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
+  opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
+  return new azu.AzuSvcBusUtil(opts);
 }
 
 setTimeout(poll, poll_sleep_ms, 1);

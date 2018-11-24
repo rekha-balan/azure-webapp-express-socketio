@@ -55,7 +55,7 @@
       </table>
       <hr/>
       <ul id="messages"></ul>
-      <form action="">
+      <form action="" id='bus_message_form'>
         <input id="m" autocomplete="off" /><button>Send</button>
       </form>
     </div>
@@ -75,8 +75,8 @@
           return false;
         });
 
-        $('form').submit(function(){
-          socket.emit('chat_message', $('#m').val());
+        $('#bus_message_form').submit(function(){
+          socket.emit('bus_message', $('#m').val());
           $('#m').val('');
           return false;
         });
@@ -88,6 +88,8 @@
         });
         socket.on('disconnect', () => {
           $("#socket_id").text('');
+          $('#logon_div').show();
+          $('#main_div').hide();
         });
 
         socket.on('logon_successful', function(msg) {
@@ -101,7 +103,7 @@
           $('#messages').append($('<li>').text('logon_unsuccessful ' + msg));
         });
 
-        socket.on('chat_message', function(msg){
+        socket.on('bus_message', function(msg){
           $('#messages').append($('<li>').text(msg));
         });
 
