@@ -22,6 +22,10 @@ sb_util.on('done', (evt_obj) => {
   console.log(JSON.stringify(evt_obj, null, 2));
 });
 
+// Create a Redis Client
+var redis_util = new azu.AzuRedisUtil();
+var raw_redis_client = redis_util.raw_client();
+
 // Environment and app-global variables (i.e. - "locals")
 var env = process.env.NODE_ENV || 'development';
 app.locals.ENV = env;
@@ -48,8 +52,6 @@ app.get('/', function(req, res) {
 io.on('connection', function(socket) {
   console.log('a user connected');
   console.log('socket.handshake.session: ' + JSON.stringify(socket.handshake.session));
-  
-  socket.broadcast.emit('hi');
 
   socket.on('logon_submit', function(msg) {
     console.log('logon_submit: ' + msg);
@@ -71,7 +73,7 @@ io.on('connection', function(socket) {
     if (authenticated) {
       var event_count = 0;
       console.log('logon_successful: ' +  user_id);
-      socket.emit('logon_successful', user_id);
+      io.to(socket.id).emit('logon_successful', user_id);
 
       socket.handshake.session.auth_user_id = user_id;
       socket.handshake.session.save();
@@ -89,25 +91,15 @@ io.on('connection', function(socket) {
     }
     else {
       console.log('logon_unsuccessful: ' + user_id);
-      socket.emit('logon_unsuccessful', '');
+      io.to(socket.id).emit('logon_unsuccessful', user_id);
     }
   });
-
-  // socket.on('chat_message', function(msg) {
-  //   var auth_user_id = socket.handshake.session.auth_user_id;
-  //   console.log('chat_message from user: ' + auth_user_id + ' message: ' + msg);
-  //   io.emit('chat_message', msg);
-
-  //   io.of('/').clients((error, clients) => {
-  //     if (error) throw error;
-  //     console.log(clients);
-  //   });
-  // });
 
   socket.on('bus_message', function(msg) {
     var auth_user_id = socket.handshake.session.auth_user_id;
     console.log('bus_message from user: ' + auth_user_id + ' message: ' + msg);
-    io.emit('chat_message', msg);
+    //io.emit('chat_message', msg);
+    io.to(socket.id).emit('chat_message', msg);
 
     // Create and put a message on Azure Service Bus
     var message = {};
@@ -121,14 +113,13 @@ io.on('connection', function(socket) {
   });
 
   socket.on('client_poll', function() {
-    var socket_id = socket.id;
-    var data = poll_data[socket_id];
+    var data = poll_data[socket.id];
+    console.log('client_poll from ' + socket.id + ' -> ' + data);
     if (data) {
-      console.log('client_poll from ' + socket_id + ' -> ' + data);
-      socket.emit('client_poll_response', data);
-      delete poll_data[socket_id];
+      io.to(socket.id).emit('client_poll_response', data);
+      poll_data[socket.id] = undefined;
+      delete poll_data.socket_id;
     }
-    // set uwVR5LUlcAiHWw5EAAAA '{\"socket_id\":\"uwVR5LUlcAiHWw5EAAAA\",\"text\":\"xxx\"}'
   });
 
   socket.on('disconnect', function() {
@@ -143,25 +134,16 @@ var server = http.listen(app.get('port'), function() {
   console.log('Express server listening on port ' + server.address().port);
 });
 
-// function get_svcbus_client() {
-//   var opts = {};
-//   opts['queue_name'] = process.env.AZURE_SERVICEBUS_INBOUND_QUEUE || 'inbound';
-//   opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
-//   opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
-//   return new azu.AzuSvcBusUtil(opts);
-// }
-
 function poll_redis_cache(i) {
-  console.log('poll_redis_cache: ' + i);
-  var poll_cache = new azu.AzuRedisUtil();
-  var raw_client = poll_cache.raw_client();
+  console.log('poll_redis_cache - seq: ' + i);
+  //console.log('poll_redis_cache - current: ' + JSON.stringify(poll_data, null, 2));
 
   io.of('/').clients((error, clients) => {
     if (error) throw error;
     for (var i = 0; i < clients.length; i++) {
       var socket_id = clients[i];
       console.log('poll_redis_cache - for socket_id: ' + socket_id);
-      raw_client.get(socket_id, (err, reply) => {
+      raw_redis_client.get(socket_id, (err, reply) => {
         if (reply) {
           try {
             poll_data[socket_id] = reply;
@@ -169,11 +151,8 @@ function poll_redis_cache(i) {
             var obj = JSON.parse(reply);
             var id  = obj['socket_id'];
             poll_data[id] = reply;
-  
-            raw_client.del(socket_id, function(err, response) {
-              if (response == 1) {
-                console.log("poll_redis_cache - key deleted: " + socket_id);
-              }
+            raw_redis_client.del(id, function(err, response) {
+              console.log("poll_redis_cache - delete_key: " + id + ' resp: ' + response + ' err: ' + err);
             });
           }
           catch (err) {
