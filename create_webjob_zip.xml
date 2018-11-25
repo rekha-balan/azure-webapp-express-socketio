@@ -19,9 +19,8 @@
         <zip zipfile="${_zipFilename}"
              basedir="."
              excludes=".git/, bin/, img/, log/, public/, tasks/, tmp/, views/,
-               backup.xml, create_webjob_zip.xml, txt_merged.txt, worker.js,
-               node_modules_files.txt,
-                **/*.html, **/*.sh, **/*.ps1, **/*.zip" />
+                backup.xml, create_webjob_zip.xml, txt_merged.txt, worker.js,
+                **/.sh, **/*.ps1, **/*.txt, **/*.html, **/*.sh, **/*.ps1, **/*.zip" />
 
         <echo message="done" />
     </target>
