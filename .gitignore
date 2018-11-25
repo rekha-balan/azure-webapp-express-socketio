@@ -1,5 +1,8 @@
 
+node_modules_files.txt
+node_modules_files_pruned.txt
 tmp/
+webjob.zip
 
 # Logs
 logs

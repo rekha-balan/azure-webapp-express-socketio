@@ -1,0 +1,29 @@
+<project name="create_webjob_zip" default="create_webjob_zip" basedir=".">
+    
+    <description>
+        Ant script to create the webjob zip file for deployment.
+        The zip file should contain file run.js and the lib/ (my code) and 
+        node_modules/ (third party code) directories.
+        Chris Joakim, 2018/11/25
+        $ ant -f create_webjob_zip.xml
+    </description>
+
+    <target name="create_webjob_zip">
+        <description>
+            Create the webjob.zip file.
+        </description>
+
+        <property name="_zipFilename" value="webjob.zip" />
+        <delete file="${_zipFilename}" />
+
+        <zip zipfile="${_zipFilename}"
+             basedir="."
+             excludes=".git/, bin/, img/, log/, public/, tasks/, tmp/, views/,
+               backup.xml, create_webjob_zip.xml, txt_merged.txt, worker.js,
+               node_modules_files.txt,
+                **/*.html, **/*.sh, **/*.ps1, **/*.zip" />
+
+        <echo message="done" />
+    </target>
+
+</project>
