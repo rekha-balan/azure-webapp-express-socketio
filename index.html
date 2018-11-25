@@ -64,6 +64,7 @@
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       $(function () {
+        var socket_id = '';
         var do_client_polling = false;
         var socket = io();
         $('#main_div').hide();
@@ -84,6 +85,7 @@
 
         socket.on('connect', () => {
           var id = socket.id;
+          socket_id = socket.id;
           console.log('connect; socket.id: ' + id);
           $("#socket_id").text(id);
         });
@@ -119,7 +121,7 @@
         });
 
         function client_poll() {
-          socket.emit('client_poll', 'please');
+          socket.emit('client_poll', '' + socket_id);
           setTimeout(client_poll, 3000);
         }
 

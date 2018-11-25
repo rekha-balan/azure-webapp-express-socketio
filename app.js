@@ -112,12 +112,13 @@ io.on('connection', function(socket) {
     sb_util.send_message_to_queue(message);
   });
 
-  socket.on('client_poll', function() {
-    var data = poll_data[socket.id];
-    console.log('client_poll from ' + socket.id + ' -> ' + data);
+  socket.on('client_poll', function(socket_id) {
+    console.log('client_poll: ' + socket_id);
+    var data = poll_data[socket_id];
+    console.log('client_poll from ' + socket_id + ' -> ' + data);
     if (data) {
-      io.to(socket.id).emit('client_poll_response', data);
-      poll_data[socket.id] = undefined;
+      io.to(socket_id).emit('client_poll_response', data);
+      poll_data[socket_id] = undefined;
       delete poll_data.socket_id;
     }
   });
