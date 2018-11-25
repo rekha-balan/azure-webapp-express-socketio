@@ -1,15 +1,13 @@
 'use strict';
 
-// 
-// Chris Joakim, 2018/11/24
+// Batch and Daemon processes for this application.
+// Chris Joakim, 2018/11/25
 
 const azu = require('./lib/azu');
 
 class Main {
 
     constructor() {
-        this.in_qname = undefined;
-        this.out_qname = undefined;
         this.reader_svcbus_util = undefined;
         this.writer_svcbus_util = undefined;
         this.cache = undefined;
@@ -29,14 +27,24 @@ class Main {
 
                 case 'backend_daemon':
                     var in_queue  = process.argv[3] || 'inbound';
-                    var out_queue = process.argv[4] || 'outbound'
+                    var out_queue = process.argv[4] || 'outbound';
                     this.backend_daemon(in_queue, out_queue);
                     break;
 
                 case 'webapp_worker':
                     var in_queue  = process.argv[3];
-                    console.log(in_queue);
                     this.webapp_worker(in_queue);
+                    break;
+
+                case 'send_test_messages':
+                    var out_queue = process.argv[3] || 'outbound';
+                    var count = Number(process.argv[4] || '10');
+                    this.send_test_messages(out_queue, count);
+                    break;
+
+                case 'queue_info':
+                    var queue = process.argv[3] || 'outbound';
+                    this.queue_info(queue);
                     break;
 
                 default:
@@ -51,27 +59,23 @@ class Main {
         console.log('  node worker.js backend_daemon inbound outbound');
         console.log('  node worker.js webapp_worker outbound');
         console.log('  node worker.js webapp_worker inbound  (for no back-end processing)');
+        console.log('  node worker.js send_test_messages outbound 10');
+        console.log('  node worker.js queue_info outbound');
     }
 
     backend_daemon(in_queue, out_queue) {
-        this.in_qname = in_queue;
-        this.out_qname = out_queue;
-        this.reader_svcbus_util = this.create_service_bus_util(this.in_qname);
-        this.writer_svcbus_util = this.create_service_bus_util(this.out_qname);
-
         // The "back end" process simulates Java on-prem processing.
         // TODO - implement later; webapp_worker() reading from first queue should suffice.
     }
 
     webapp_worker(in_queue) {
-        this.in_qname = in_queue;
+        console.log('start of webapp_worker on input queue: ' + in_queue);
         this.cache = new azu.AzuRedisUtil();
         this.cache.on('done', (evt_obj) => {
             console.log(JSON.stringify(evt_obj, null, 2));
         });
-        // this.cache.set('user_session_' + user_id, socket.id);
-
-        this.reader_svcbus_util = this.create_service_bus_util(this.in_qname);
+        var read_opts = { isPeekLock: false, timeoutIntervalInS: 5 };
+        this.reader_svcbus_util = this.create_service_bus_util(in_queue);
         this.reader_svcbus_util.on('done', (evt_obj) => {
             console.log('evt_obj: ' + JSON.stringify(evt_obj, null, 2));
             if (evt_obj['message']) {
@@ -87,43 +91,71 @@ class Main {
                 // This is converted to a "undefined" string now and will return an error from v.3.0 on.
                 // Please handle this in your code to make sure everything works as you intended it to.
             }
-            this.webapp_worker_read_next_message();
+            this.webapp_worker_read_next_message(in_queue, read_opts);
         });
-        this.webapp_worker_read_next_message();
+        this.webapp_worker_read_next_message(in_queue, read_opts);
     }
 
-    webapp_worker_read_next_message() {
-        this.reader_svcbus_util.read_message_from_queue(this.in_queue, {});
+    webapp_worker_read_next_message(in_queue, read_opts) {
+        this.reader_svcbus_util.read_message_from_queue(in_queue, read_opts);
     }
 
-    send_sb_msg(qname, sessid) {
-        console.log('send_sb_msg: ' + qname + ' ' + sessid);
-        var opts = {};
-        opts['queue_name'] = qname;
-        opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
-        opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
-        console.log(opts);
-        var sbu = new azu.AzuSvcBusUtil(opts);
-
-        var message = {};
-        var body = {};
-        body['text'] = 'test message';
-        body['date'] = (new Date()).toString();
-        message.body = JSON.stringify(body);
-
-        if (sessid !== 'none') {
-            message.brokerProperties = {};
-            message.brokerProperties['SessionId'] = sessid;
-            message.brokerProperties['ReplyToSessionId'] = sessid;
-        }
-
-        sbu.on('done', (evt_obj) => {
+    send_test_messages(out_queue, count) {
+        var sb_util = this.create_service_bus_util(out_queue);
+        sb_util.on('done', (evt_obj) => {
             console.log(JSON.stringify(evt_obj, null, 2));
         });
 
-        console.log('sending msg: ' + JSON.stringify(message, null, 2));
-        sbu.send_message_to_queue(message, qname);
+        for (var i = 0; i < count; i++) {
+            var n = i + 1;
+            var message = {};
+            var body = {};
+            body['auth_user_id'] = 'none';
+            body['socket_id'] = '0';
+            body['text'] = 'test message ' + n + ' from worker.js';
+            body['date'] = (new Date()).toString();
+            body['seq']  = n;
+            message.body = JSON.stringify(body);
+            sb_util.send_message_to_queue(message);
+        }
     }
+
+    queue_info(queue) {
+        var sb_util = this.create_service_bus_util(queue);
+        sb_util.on('done', (evt_obj) => {
+            console.log(JSON.stringify(evt_obj, null, 2));
+        });
+        sb_util.get_queue_info(queue);
+    }
+
+    // send_sb_msg(qname, sessid) {
+    //     console.log('send_sb_msg: ' + qname + ' ' + sessid);
+    //     var opts = {};
+    //     opts['queue_name'] = qname;
+    //     opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
+    //     opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
+    //     console.log(opts);
+    //     var sbu = new azu.AzuSvcBusUtil(opts);
+
+    //     var message = {};
+    //     var body = {};
+    //     body['text'] = 'test message';
+    //     body['date'] = (new Date()).toString();
+    //     message.body = JSON.stringify(body);
+
+    //     if (sessid !== 'none') {
+    //         message.brokerProperties = {};
+    //         message.brokerProperties['SessionId'] = sessid;
+    //         message.brokerProperties['ReplyToSessionId'] = sessid;
+    //     }
+
+    //     sbu.on('done', (evt_obj) => {
+    //         console.log(JSON.stringify(evt_obj, null, 2));
+    //     });
+
+    //     console.log('sending msg: ' + JSON.stringify(message, null, 2));
+    //     sbu.send_message_to_queue(message, qname);
+    // }
 
     read_sb_msg(qname, sessid) {
         console.log('read_sb_msg: ' + qname + ' ' + sessid);
