@@ -13,7 +13,7 @@ var poll_data = {};
 
 // Create a Service Bus Util
 var sb_opts = {};
-sb_opts['queue_name'] = process.env.AZURE_SERVICEBUS_OUTBOUND_QUEUE || 'outbound';
+sb_opts['queue_name'] = 'outbound'; // process.env.AZURE_SERVICEBUS_OUTBOUND_QUEUE || 'outbound';
 sb_opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
 sb_opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
 console.log('creating AzuSvcBusUtil on queue: ' + sb_opts['queue_name']);
@@ -26,7 +26,7 @@ sb_util.on('done', (evt_obj) => {
 var env = process.env.NODE_ENV || 'development';
 app.locals.ENV = env;
 app.locals.ENV_DEVELOPMENT = env == 'development';
-console.log(app.locals);
+//console.log(app.locals);
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -121,8 +121,14 @@ io.on('connection', function(socket) {
   });
 
   socket.on('client_poll', function() {
-    console.log('client_poll from ' + socket.id);
-    socket.emit('client_poll_response', 'client_poll_response at ' + new Date());
+    var socket_id = socket.id;
+    var data = poll_data[socket_id];
+    if (data) {
+      console.log('client_poll from ' + socket_id + ' -> ' + data);
+      socket.emit('client_poll_response', data);
+      delete poll_data[socket_id];
+    }
+    // set uwVR5LUlcAiHWw5EAAAA '{\"socket_id\":\"uwVR5LUlcAiHWw5EAAAA\",\"text\":\"xxx\"}'
   });
 
   socket.on('disconnect', function() {
@@ -157,17 +163,22 @@ function poll_redis_cache(i) {
       console.log('poll_redis_cache - for socket_id: ' + socket_id);
       raw_client.get(socket_id, (err, reply) => {
         if (reply) {
-          poll_data[socket_id] = reply;
-          console.log('poll_redis_cache - reply for: ' + socket_id + ' -> ' + reply);
-          var obj = JSON.parse(reply);
-          var id  = obj['socket_id'];
-          poll_data[id] = reply;
-
-          raw_client.del(socket_id, function(err, response) {
-            if (response == 1) {
-              console.log("poll_redis_cache - key deleted: " + socket_id);
-            }
-          });
+          try {
+            poll_data[socket_id] = reply;
+            console.log('poll_redis_cache - reply for: ' + socket_id + ' -> ' + reply);
+            var obj = JSON.parse(reply);
+            var id  = obj['socket_id'];
+            poll_data[id] = reply;
+  
+            raw_client.del(socket_id, function(err, response) {
+              if (response == 1) {
+                console.log("poll_redis_cache - key deleted: " + socket_id);
+              }
+            });
+          }
+          catch (err) {
+            console.log('poll_redis_cache - error - ' + err);
+          }
         }
       });
     }

@@ -81,7 +81,6 @@ class Main {
             if (evt_obj['message']) {
                 // {"auth_user_id":"miles","socket_id":"QHkZZRZUVF_yy4Y5AAAA","date":"Sat Nov 24 2018 17:14:08 GMT-0500 (EST)","text":"gggg"}
                 var body = JSON.parse(evt_obj['message']['body']);
-                var auth_user_id = body['auth_user_id'];
                 var socket_id = body['socket_id'];
                 console.log('setting redis key ' + socket_id + ' -> ' + body);
                 this.cache.set(socket_id, JSON.stringify(body));

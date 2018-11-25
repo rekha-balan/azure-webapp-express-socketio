@@ -64,6 +64,7 @@
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       $(function () {
+        var do_client_polling = false;
         var socket = io();
         $('#main_div').hide();
 
@@ -87,6 +88,7 @@
           $("#socket_id").text(id);
         });
         socket.on('disconnect', () => {
+          do_client_polling = false;
           $("#socket_id").text('');
           $('#logon_div').show();
           $('#main_div').hide();
@@ -98,6 +100,7 @@
           $('#auth_user_id').text(msg);
 
           $('#messages').append($('<li>').text('logon_successful ' + msg));
+          do_client_polling = true;
         });
         socket.on('logon_unsuccessful', function(msg){
           $('#messages').append($('<li>').text('logon_unsuccessful ' + msg));
