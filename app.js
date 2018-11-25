@@ -8,8 +8,19 @@ var http = require('http').Server(app);
 var io   = require('socket.io')(http);
 var bodyParser = require('body-parser');
 var azu = require('./lib/azu');
-var poll_sleep_ms = 5000;
+var poll_sleep_ms = 3000;
 var poll_data = {};
+
+// Create a Service Bus Util
+var sb_opts = {};
+sb_opts['queue_name'] = process.env.AZURE_SERVICEBUS_OUTBOUND_QUEUE || 'outbound';
+sb_opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
+sb_opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
+console.log('creating AzuSvcBusUtil on queue: ' + sb_opts['queue_name']);
+var sb_util = new azu.AzuSvcBusUtil(sb_opts);
+sb_util.on('done', (evt_obj) => {
+  console.log(JSON.stringify(evt_obj, null, 2));
+});
 
 // Environment and app-global variables (i.e. - "locals")
 var env = process.env.NODE_ENV || 'development';
@@ -98,11 +109,7 @@ io.on('connection', function(socket) {
     console.log('bus_message from user: ' + auth_user_id + ' message: ' + msg);
     io.emit('chat_message', msg);
 
-    // Create an Azure Service Bus client
-    var sb_client = get_svcbus_client();
-    //var qname = process.env.AZURE_SERVICEBUS_INBOUND_QUEUE || 'inbound';
-
-    // Create a message to put on Azure Service Bus
+    // Create and put a message on Azure Service Bus
     var message = {};
     var body = {};
     body['auth_user_id'] = auth_user_id;
@@ -110,20 +117,15 @@ io.on('connection', function(socket) {
     body['date'] = (new Date()).toString();
     body['text'] = msg;
     message.body = JSON.stringify(body);
-
-    // Send the message
-    sb_client.on('done', (evt_obj) => {
-      console.log(JSON.stringify(evt_obj, null, 2));
-    });
-    sb_client.send_message_to_queue(message);
+    sb_util.send_message_to_queue(message);
   });
 
-  socket.on('client_poll', function(){
-    console.log('client_poll');
-    socket.emit('client_poll received');
+  socket.on('client_poll', function() {
+    console.log('client_poll from ' + socket.id);
+    socket.emit('client_poll_response', 'client_poll_response at ' + new Date());
   });
 
-  socket.on('disconnect', function(){
+  socket.on('disconnect', function() {
     console.log('user disconnected');
     socket.broadcast.emit('user disconnected');
   });
@@ -135,16 +137,16 @@ var server = http.listen(app.get('port'), function() {
   console.log('Express server listening on port ' + server.address().port);
 });
 
-function get_svcbus_client() {
-  var opts = {};
-  opts['queue_name'] = process.env.AZURE_SERVICEBUS_INBOUND_QUEUE || 'inbound';
-  opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
-  opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
-  return new azu.AzuSvcBusUtil(opts);
-}
+// function get_svcbus_client() {
+//   var opts = {};
+//   opts['queue_name'] = process.env.AZURE_SERVICEBUS_INBOUND_QUEUE || 'inbound';
+//   opts['key_name']   = process.env.AZURE_SERVICEBUS_KEY_NAME;
+//   opts['key_value']  = process.env.AZURE_SERVICEBUS_ACCESS_KEY;
+//   return new azu.AzuSvcBusUtil(opts);
+// }
 
 function poll_redis_cache(i) {
-  console.log('poll: ' + i);
+  console.log('poll_redis_cache: ' + i);
   var poll_cache = new azu.AzuRedisUtil();
   var raw_client = poll_cache.raw_client();
 
@@ -152,18 +154,18 @@ function poll_redis_cache(i) {
     if (error) throw error;
     for (var i = 0; i < clients.length; i++) {
       var socket_id = clients[i];
-      console.log('poll for socket_id: ' + socket_id);
+      console.log('poll_redis_cache - for socket_id: ' + socket_id);
       raw_client.get(socket_id, (err, reply) => {
         if (reply) {
           poll_data[socket_id] = reply;
-          console.log('redis reply for: ' + socket_id + ' -> ' + reply);
+          console.log('poll_redis_cache - reply for: ' + socket_id + ' -> ' + reply);
           var obj = JSON.parse(reply);
           var id  = obj['socket_id'];
           poll_data[id] = reply;
 
           raw_client.del(socket_id, function(err, response) {
             if (response == 1) {
-              console.log("redis key deleted: " + socket_id);
+              console.log("poll_redis_cache - key deleted: " + socket_id);
             }
           });
         }
