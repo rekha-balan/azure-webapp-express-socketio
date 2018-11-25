@@ -3,7 +3,7 @@
 // Webjob for this application.
 // Chris Joakim, 2018/11/25
 
-const azu = require('./lib/azu');
+var azu = require('./lib/azu');
 
 class Main {
 
