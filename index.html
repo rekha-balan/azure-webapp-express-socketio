@@ -77,7 +77,7 @@
           return false;
         });
 
-        $('#bus_message_form').submit(function(){
+        $('#bus_message_form').submit(function() {
           socket.emit('bus_message', $('#m').val());
           $('#m').val('');
           return false;
@@ -89,6 +89,7 @@
           console.log('connect; socket.id: ' + id);
           $("#socket_id").text(id);
         });
+
         socket.on('disconnect', () => {
           do_client_polling = false;
           $("#socket_id").text('');
@@ -104,20 +105,29 @@
           $('#messages').append($('<li>').text('logon_successful ' + msg));
           do_client_polling = true;
         });
-        socket.on('logon_unsuccessful', function(msg){
+        socket.on('logon_unsuccessful', function(msg) {
           $('#messages').append($('<li>').text('logon_unsuccessful ' + msg));
         });
 
-        socket.on('bus_message', function(msg){
+        socket.on('bus_message', function(msg) {
           $('#messages').append($('<li>').text(msg));
         });
 
-        socket.on('chat_message', function(msg){
+        socket.on('chat_message', function(msg) {
           $('#messages').append($('<li>').text(msg));
         });
 
-        socket.on('client_poll_response', function(msg){
-          $('#messages').append($('<li>').text(msg));
+        socket.on('client_poll_response', function(msg) {
+          try {
+            var obj = JSON.parse(msg);
+            var id = obj['socket_id'];
+            if (id === socket_id) {
+              $('#messages').append($('<li>').text(msg));
+            }
+          }
+          catch (err) {
+            console.log('client_poll_response error: ' + err);
+          }
         });
 
         function client_poll() {

@@ -113,9 +113,9 @@ io.on('connection', function(socket) {
   });
 
   socket.on('client_poll', function(socket_id) {
-    console.log('client_poll: ' + socket_id);
+    //console.log('client_poll: ' + socket_id);
     var data = poll_data[socket_id];
-    console.log('client_poll from ' + socket_id + ' -> ' + data);
+    //console.log('client_poll from ' + socket_id + ' -> ' + data);
     if (data) {
       io.to(socket_id).emit('client_poll_response', data);
       poll_data[socket_id] = undefined;
