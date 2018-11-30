@@ -9,6 +9,9 @@
 - [SocketIO](https://socket.io)
 - [SocketIO on Azure](https://docs.microsoft.com/en-us/azure/cloud-services/cloud-services-nodejs-chat-app-socketio)
 - [SocketIO with Redis](https://mono.software/2014/08/25/Sharing-sessions-between-SocketIO-and-Express-using-Redis/)
+- [What Socket.IO is](https://socket.io/docs/)
+- [SocketIO vs WebSocket](https://davidwalsh.name/websocket)
+- [Azure AD and NodeJS Web App](https://azure.microsoft.com/en-us/resources/samples/active-directory-node-webapp-openidconnect/)
 
 ## Setup
 
