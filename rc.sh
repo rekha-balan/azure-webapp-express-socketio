@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Bash script to open a Redis CLI pointing to Azure Redis.
-# Chris Joakim, 2018/11/24
+# Chris Joakim, 2018/11/30
 
 # Sample Redis CLI Commands:
 # > ping
