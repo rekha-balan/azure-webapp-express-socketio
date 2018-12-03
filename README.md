@@ -58,5 +58,5 @@ Screenshot:
 
 ### Azure Functions App
 
-See function **ServicebusTriggerSocketIO*** in GitHub repository
+See function **ServicebusTriggerSocketIO** in GitHub repository
 https://github.com/cjoakim/azure-functions-v2-node for a working example of this design.
