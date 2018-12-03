@@ -20,6 +20,7 @@
 - Provision an Azure Web App
 - Provision an Azure Service Bus, with inbound and outbound queues
 - Provision an Azure Redis Cache
+- Provision an Azure Functions App, Node.js language
 
 ### Workstation Setup
 
@@ -54,3 +55,8 @@
 Screenshot:
 
 ![cosmosdb](img/SocketIO-App-Screenshot.png)
+
+### Azure Functions App
+
+See function **ServicebusTriggerSocketIO*** in GitHub repository
+https://github.com/cjoakim/azure-functions-v2-node for a working example of this design.
